@@ -1,0 +1,45 @@
+name: Deploy backend to VM
+on:
+    pull_request:
+        branches:
+        - 'main'
+    push:
+        branches:
+        - 'main'
+
+jobs:
+  deploy:
+    if: "!startsWith(github.event.head_commit.message, '[CI Skip]')"
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_PRIVATE_KEY }}
+          port: ${{ secrets.VM_PORT }}
+          script: |
+            echo "BRANCH_NAME: $BRANCH_NAME"
+            echo "GITHUB_ACTOR: $GITHUB_ACTOR"
+            TIMESTAMP=$(date +%Y%m%d_%H%M)
+            mkdir -p /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
+            cd /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
+            gh repo clone https://github.com/DominicHoang/nx-node-fastify-example.git -- --branch $BRANCH_NAME
+            cd nx-examples
+            yarn install 
+            yarn nx run-many --target=build --projects=fastify-app
+            RANDOM_PORT="$(shuf -i 3300-3400 -n 1)"
+            echo $RANDOM_PORT
+            PORT=$RANDOM_PORT
+            echo "yarn nx run fastify-app:serve:production --port=$RANDOM_PORT" > run.sh
+            chmod +x run.sh
+            nohup ./run.sh &
+            cloudflared tunnel --url http://localhost:$RANDOM_PORT |grep "https//"
+          envs:
+            GITHUB_ACTOR: ${{ github.github_actor }}
+            SOURCE_BRANCH: ${{ github.ref_name }}
