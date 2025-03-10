@@ -25,11 +25,11 @@ jobs:
           port: ${{ secrets.VM_PORT }}
           script: |
             TIMESTAMP=$(date +%Y%m%d_%H%M)
-            mkdir -p /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
-            cd /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
-            gh repo clone https://github.com/DominicHoang/nx-node-fastify-example.git
+            mkdir -p /home/vagrant/test-ci/test-$TIMESTAMP 
+            cd /home/vagrant/test-ci/test-$TIMESTAMP
+            gh repo clone https://github.com/DominicHoang/nx-node-fastify-example.git -- --branch main
             cd nx-node-fastify-example
-            yarn install --ignore-engines
+            yarn install --immutable
             yarn nx run-many --target=build --projects=fastify-app
             RANDOM_PORT="$(shuf -i 3300-3400 -n 1)"
             echo $RANDOM_PORT
