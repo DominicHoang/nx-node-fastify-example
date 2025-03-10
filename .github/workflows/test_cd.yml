@@ -39,7 +39,3 @@ jobs:
             echo "yarn nx run fastify-app:serve:production --port=$RANDOM_PORT" > run.sh
             chmod +x run.sh
             nohup ./run.sh &
-            cloudflared tunnel --url http://localhost:$RANDOM_PORT |grep "https//"
-          envs:
-            GITHUB_ACTOR: ${{ github.github_actor }}
-            SOURCE_BRANCH: ${{ github.ref_name }}
