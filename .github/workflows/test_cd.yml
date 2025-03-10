@@ -24,13 +24,11 @@ jobs:
           key: ${{ secrets.VM_PRIVATE_KEY }}
           port: ${{ secrets.VM_PORT }}
           script: |
-            echo "BRANCH_NAME: $BRANCH_NAME"
-            echo "GITHUB_ACTOR: $GITHUB_ACTOR"
             TIMESTAMP=$(date +%Y%m%d_%H%M)
             mkdir -p /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
             cd /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
-            gh repo clone https://github.com/DominicHoang/nx-node-fastify-example.git -- --branch $BRANCH_NAME
-            cd nx-examples
+            gh repo clone https://github.com/DominicHoang/nx-node-fastify-example.git
+            cd nx-node-fastify-example
             yarn install 
             yarn nx run-many --target=build --projects=fastify-app
             RANDOM_PORT="$(shuf -i 3300-3400 -n 1)"
@@ -39,7 +37,3 @@ jobs:
             echo "yarn nx run fastify-app:serve:production --port=$RANDOM_PORT" > run.sh
             chmod +x run.sh
             nohup ./run.sh &
-            cloudflared tunnel --url http://localhost:$RANDOM_PORT |grep "https//"
-          envs:
-            GITHUB_ACTOR: ${{ github.github_actor }}
-            SOURCE_BRANCH: ${{ github.ref_name }}
