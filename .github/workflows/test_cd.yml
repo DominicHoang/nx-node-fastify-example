@@ -12,28 +12,27 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, '[CI Skip]')"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        
       - name: Deploy to VM
         uses: appleboy/ssh-action@master
+        env:
+            GITHUB_ACTOR: ${{ github.github_actor }}
+            BRANCH: ${{ github.ref_name }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_PRIVATE_KEY }}
           port: ${{ secrets.VM_PORT }}
+          envs: GITHUB_ACTOR,BRANCH
           script: |
             TIMESTAMP=$(date +%Y%m%d_%H%M)
-            mkdir -p /home/vagrant/test-ci/test-$TIMESTAMP 
-            cd /home/vagrant/test-ci/test-$TIMESTAMP
-            gh repo clone https://github.com/DominicHoang/nx-node-fastify-example.git -- --branch main
+            mkdir -p /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
+            cd /home/vagrant/test-ci/test-$TIMESTAMP-$GITHUB_ACTOR 
+            gh repo clone https://github.com/DominicHoang/nx-node-fastify-example.git -- --branch $BRANCH
             cd nx-node-fastify-example
-            nvm use 20
-            yarn install --immutable
-            yarn nx run-many --target=build --projects=fastify-app
+            /usr/bin/yarn install 
+            /usr/bin/yarn nx run-many --target=build --projects=fastify-app
             RANDOM_PORT="$(shuf -i 3300-3400 -n 1)"
             echo $RANDOM_PORT
-            PORT=$RANDOM_PORT
-            echo "yarn nx run fastify-app:serve:production --port=$RANDOM_PORT" > run.sh
+            echo "/usr/bin/yarn nx run fastify-app:serve:production --port=$RANDOM_PORT" > run.sh
             chmod +x run.sh
             nohup ./run.sh &
